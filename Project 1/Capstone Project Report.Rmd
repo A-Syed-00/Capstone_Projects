@@ -1,0 +1,524 @@
+---
+title: "Using the GSS to Visualize People's Opinions on Traditional Gender Roles in the United States"
+author: "Asma Syed"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+#  About the Dataset
+
+## Study Population 
+  
+  The data set that I used was extracted from the General Social Survey (GSS) Data Explorer database. I selected my variables of interest after considering their possible influence on people's opinions on traditional gender roles. After siphoning the data and loading it on R studio, the data set consisted of 72,390 observations and 20 variables. Since I wanted to exclusively focus my analysis on the population surveyed in the year 2022, I filtered the original data to exclude all other years from 1972 to 2021. The result was a data set that had a total of 3,544 respondents from the 2022 survey.
+```{r setup from GSS, echo=FALSE, message=FALSE, include=FALSE}
+library(foreign)
+  read.dct <- function(dct, labels.included = "yes") {
+      temp <- readLines(dct)
+      temp <- temp[grepl("_column", temp)]
+      switch(labels.included,
+             yes = {
+                 pattern <- "_column\\(([0-9]+)\\)\\s+([a-z0-9]+)\\s+(.*)\\s+%([0-9]+)[a-z]\\s+(.*)"
+                 classes <- c("numeric", "character", "character", "numeric", "character")
+                 N <- 5
+                 NAMES <- c("StartPos", "Str", "ColName", "ColWidth", "ColLabel")
+             },
+             no = {
+                 pattern <- "_column\\(([0-9]+)\\)\\s+([a-z0-9]+)\\s+(.*)\\s+%([0-9]+).*"
+                 classes <- c("numeric", "character", "character", "numeric")
+                 N <- 4
+                 NAMES <- c("StartPos", "Str", "ColName", "ColWidth")
+             })
+      temp_metadata <- setNames(lapply(1:N, function(x) {
+          out <- gsub(pattern, paste("\\", x, sep = ""), temp)
+          out <- gsub("^\\s+|\\s+$", "", out)
+          out <- gsub('\"', "", out, fixed = TRUE)
+          class(out) <- classes[x] ; out }), NAMES)
+      temp_metadata[["ColName"]] <- make.names(gsub("\\s", "", temp_metadata[["ColName"]]))
+      temp_metadata
+  }
+
+  read.dat <- function(dat, metadata_var, labels.included = "yes") {
+      read.table(dat, col.names = metadata_var[["ColName"]])
+  }
+
+
+GSS_metadata <- read.dct("~/Downloads/STA 490/Proj23/GSS.dct") 
+GSS_ascii <- read.dat("~/Downloads/STA 490/Proj23/GSS.dat", GSS_metadata)
+attr(GSS_ascii, "col.label") <- GSS_metadata[["ColLabel"]]
+GSS <- GSS_ascii
+```
+Since I wanted to exclusively focus my analysis on the population surveyed in the year 2022, I filtered the original data to exclude all other years from 1972 to 2021. The result was a data set that had a total of 3,544 respondents from the 2022 survey.
+
+```{r filtering to year 2022, echo=FALSE, include=FALSE}
+library(dplyr)
+library(tidyverse)
+library(knitr)
+gss22 <- GSS %>% 
+  filter(YEAR==2022)
+gss22
+```
+
+The table below displays the counts of the respondents who were administered either Ballot A, B, or C: 
+```{r, proportions of Administered Ballots in 2022, message=FALSE, echo=FALSE}
+
+ballotcounts <- gss22  %>% 
+  group_by(BALLOT) %>% 
+  summarize(count=n())
+
+kable(ballotcounts, caption="Counts of the Ballots Adminstered in 2022")
+```
+
+Considering that the response variables, which were the survey questions regarding traditional gender roles, were asked to respondents administered Ballot A, I refined the data set even further to include just Ballot A recipients. This produced a data set of 1,173 observations. 
+  Lastly, I decided on removing the variable RELIG (religion) from my analysis since its data was unavailable on the GSS database. I also decided to exclude  respondents who answered with a “Don’t know/unsure” on the two survey questions (the response variables) and the variable MARTYPE. My final omissions led to a study population of 803 observations and 14 variables. The explanatory variables that were included in the analysis was as follows: 
+  
+(1)	AGE 
+(2)	BORN 
+(3)	DEGREE 
+(4)	INCOME 
+(5)	HRS1
+(6)	MARITAL 
+(7)	MARTYPE 
+(8)	POLVIEWS 
+(9)	RACE 
+(10) REGION 
+(11) SEX
+(12) WRKSTAT
+
+
+```{r filtering the population to Ballot A, echo=FALSE, include=FALSE, message=FALSE}
+
+
+gss22 <- gss22 %>% 
+  filter(BALLOT==1) %>% 
+  select( WRKSTAT,HRS1,MARITAL,AGE,DEGREE,SEX,RACE,BORN,INCOME,REGION,POLVIEWS,FAMSUFFR,HUBBYWK1,MARTYPE)
+gss22
+```
+Data management was my next steps. 
+
+
+# Data Management 
+
+  I first started by re-coding the negative codes (-100, -99, -98 and -97) which were assigned values for missing or unanswered responses. Next, I re-categorized the explanatory variables, their new categorizations are shown in the count tables.  
+
+```{r recategorizing variables and removing NAs, echo=FALSE, include=FALSE}
+
+GSS22 <- gss22 %>% 
+  filter(HUBBYWK1 != 3 & FAMSUFFR != 3 & MARTYPE !=3)
+GSS22
+
+####Removing NA's 
+GSS22$WRKSTAT <- replace(GSS22$WRKSTAT, GSS22$WRKSTAT < 0, NA)
+GSS22$HRS1 <- replace(GSS22$HRS1, GSS22$HRS1 < 0, NA)
+GSS22$MARITAL <- replace(GSS22$MARITAL, GSS22$MARITAL < 0, NA)
+GSS22$AGE <- replace(GSS22$AGE, GSS22$AGE < 0, NA)
+GSS22$DEGREE <- replace(GSS22$DEGREE, GSS22$DEGREE < 0, NA)
+GSS22$SEX <- replace(GSS22$SEX, GSS22$SEX < 0, NA)
+GSS22$RACE <- replace(GSS22$RACE, GSS22$RACE < 0, NA)
+GSS22$BORN <- replace(GSS22$BORN, GSS22$BORN < 0, NA)
+GSS22$INCOME <- replace(GSS22$INCOME, GSS22$INCOME < 0, NA)
+GSS22$REGION <- replace(GSS22$REGION, GSS22$REGION < 0, NA)
+GSS22$POLVIEWS <- replace(GSS22$POLVIEWS, GSS22$POLVIEWS < 0, NA)
+GSS22$FAMSUFFR <- replace(GSS22$FAMSUFFR, GSS22$FAMSUFFR < 0, NA)
+GSS22$HUBBYWK1 <- replace(GSS22$HUBBYWK1, GSS22$HUBBYWK1< 0, NA)
+GSS22$MARTYPE <- replace(GSS22$MARTYPE, GSS22$MARTYPE < 0, NA)
+
+
+
+GSS22 <- GSS22 %>% 
+  mutate(WRKSTAT= case_when(WRKSTAT==1~ "Working Full-Time", 
+                            WRKSTAT==2~ "Working Part-Time", 
+                            WRKSTAT==3~ "With Job But Not at Work Due to Certain Reasons", 
+                            WRKSTAT==4~ "Unemployed, Laid Off, Looking for Work", 
+                            WRKSTAT==5~ "Retired",
+                            WRKSTAT==6~ "In School", 
+                            WRKSTAT==7~ "Keeping House", 
+                            WRKSTAT==8~ "Other")) %>% 
+  mutate(HRS1= case_when(HRS1 >= 0 & HRS1 <= 15 ~ "Worked 0-15 Hours",
+                         HRS1 >= 16 & HRS1 <= 30 ~ "Worked 16-30 Hours", 
+                         HRS1 >= 31 & HRS1 <=40 ~ "Worked 31-40 Hours", 
+                         HRS1 >= 41 & HRS1 <= 50 ~ "Worked 41-50 Hours", 
+                         HRS1 >= 51 & HRS1 <= 60 ~ "Worked 51-60 Hours", 
+                         HRS1 >= 61 & HRS1 <= 75 ~ "Worked 61-75 Hours", 
+                         HRS1 >= 76 & HRS1 <= 89 ~ "Worked 76-89 Hours")) %>% 
+  mutate(MARITAL = case_when(MARITAL== 1 ~ "Married", 
+                             MARITAL== 2 ~ "Widowed", 
+                             MARITAL== 3 ~ "Divorced", 
+                             MARITAL== 4 ~ "Seperated", 
+                             MARITAL== 5 ~ "Never Married")) %>% 
+  mutate(AGE = case_when(AGE==18 & AGE==19 ~ "18 and 19 Years Old",
+                         AGE>=20 & AGE<=29 ~ "20 to 29 Years Old",
+                         AGE>=30 & AGE<40~"30 to 39 Years Old",
+                         AGE>=40 & AGE<=49~"40 to 49 Years Old",
+                         AGE>=50 & AGE<=59~"50 to 59 Years Old",
+                         AGE>=60 & AGE<=69~"60 to 69 Years Old",
+                         AGE>=70 & AGE<=79~"70 to 79 Years Old",
+                         AGE>=80 & AGE<=89~"80 to 89 Years Old")) %>% 
+  mutate(DEGREE = case_when(DEGREE == 0~ "Less than High School", 
+                            DEGREE == 1~ "High School", 
+                            DEGREE == 2~ "Associate Degree",
+                            DEGREE == 3~ "Bachelor's", 
+                            DEGREE == 4~ "Graduate")) %>% 
+  mutate(SEX = case_when(SEX == 1~ "Male", 
+                         SEX == 2~ "Female")) %>% 
+  mutate(RACE= case_when(RACE== 1~ "White", 
+                         RACE==2~ "Black", 
+                         RACE==3~ "Other")) %>%  
+  mutate(BORN= case_when(BORN==1~ "Born in the US", 
+                         BORN==2~ "Not Born in the US")) %>% 
+  mutate(INCOME = case_when(INCOME <= 1 ~ "Under $1,000", 
+                            INCOME >= 2 & INCOME <= 4 ~ "From $1,000 to $4,999", 
+                            INCOME >= 5 & INCOME <= 8 ~ "From $5,000 to $9,999",
+                            INCOME >= 9 & INCOME <= 11 ~ "From $10,000 to $24,999", 
+                            INCOME >= 12 ~ "$25,000 or More")) %>% 
+  mutate(REGION = case_when(REGION == 1~ "New England",
+                            REGION == 2~ "Middle Atlantic", 
+                            REGION == 3~ "Midwest",
+                            REGION == 4~ "Midwest", 
+                            REGION == 5~ "South Atlantic", 
+                            REGION == 6 ~ "South",
+                            REGION == 7~ "South", 
+                            REGION == 8~ "Mountain",
+                            REGION == 9~ "Pacific")) %>% 
+  mutate(POLVIEWS = case_when(POLVIEWS == 1~ "Extremely Liberal", 
+                              POLVIEWS == 2~ "Liberal", 
+                              POLVIEWS == 3~ "Slightly Liberal", 
+                              POLVIEWS == 4~ "Moderate", 
+                              POLVIEWS == 5~ "Slightly Conservative", 
+                              POLVIEWS == 6~ "Conservative", 
+                              POLVIEWS == 7~ "Extremely Conservative")) %>% 
+  mutate(MARTYPE = case_when(MARTYPE == 1~ "Marriage between a man and woman", 
+                            MARTYPE == 2~ "Same Sex Marriage"))
+
+
+
+```
+
+
+In addition, I re-coded the response variables, HUBBYWK1 and FAMSUFFR, both of which were coded on a Likert scale of 1-5: (1) Strongly Agree, (2) Agree, (3) **Neutral responses removed**  (4) Disagree, (5) Strongly Disagree. 
+I condensed all the agree and disagree responses into two separate groups:
+*1* for *agree* and *2* for *disagree*.
+The table below displays the counts under each category, agree and disagree, as well as the missing values for the two response variables. 
+
+```{r recategorizing response variables, echo=FALSE}
+library(knitr)
+gss22_r <- GSS22 %>% 
+  mutate(HUBBYWK1= case_when(HUBBYWK1 == 1 ~ 1, 
+                             HUBBYWK1 == 2 ~ 1, 
+                             HUBBYWK1 == 4 ~ 2,
+                             HUBBYWK1 == 5 ~ 2))
+count_r1 <- gss22_r %>% 
+  group_by(HUBBYWK1) %>% 
+  summarize(count=n())
+
+kable(count_r1, caption="Counts For The Variable HUBBYWK1")
+
+
+
+gss22_r <- gss22_r %>% 
+  mutate(FAMSUFFR= case_when(FAMSUFFR == 1 ~ 1,
+                             FAMSUFFR == 2 ~ 1,
+                             FAMSUFFR == 4 ~ 2, 
+                             FAMSUFFR  == 5 ~ 2))
+count_r2 <- gss22_r %>% 
+  group_by(FAMSUFFR) %>% 
+  summarize(count=n())
+kable(count_r2, caption="Counts For The Variable FAMSUFFR")
+
+```
+
+
+## Descriptive Statistics 
+
+  Below are tables representing the counts 
+```{r counts, echo=FALSE}
+count_age <- gss22_r %>% 
+  group_by(AGE) %>% 
+  summarize(count=n())
+kable(count_age, caption="Counts For The Variable AGE")
+
+count_born <- gss22_r %>% 
+  group_by(BORN) %>% 
+  summarize(count=n())
+kable(count_born, caption="Counts For The Variable BORN")
+
+count_deg <- gss22_r %>% 
+  group_by(DEGREE) %>% 
+  summarize(count=n())
+kable(count_deg, caption="Counts For The Variable DEGREE")
+
+count_inc <- gss22_r %>% 
+  group_by(INCOME) %>% 
+  summarize(count=n())
+kable(count_inc, caption="Counts For The Variable INCOME")
+
+
+count_hrs <- gss22_r %>% 
+  group_by(HRS1) %>% 
+  summarize(count=n())
+kable(count_hrs, caption="Counts For The Variable HRS1")
+
+count_marry <- gss22_r %>% 
+  group_by(MARITAL) %>% 
+  summarize(count=n())
+kable(count_marry, caption="Counts For The Variable MARITAL")
+
+count_mar <- gss22_r %>% 
+  group_by(MARTYPE) %>% 
+  summarize(count=n())
+kable(count_mar, caption="Counts For The Variable MARTYPE")
+
+count_pol <- gss22_r %>% 
+  group_by(POLVIEWS) %>% 
+  summarize(count=n())
+kable(count_pol, caption="Counts For The Variable POLVIEWS")
+
+count_race <- gss22_r %>% 
+  group_by(RACE) %>% 
+  summarize(count=n())
+kable(count_race, caption="Counts For The Variable RACE")
+
+count_reg <- gss22_r %>% 
+  group_by(REGION) %>% 
+  summarize(count=n())
+kable(count_reg, caption="Counts For The Variable REGION")
+
+count_sex <- gss22_r %>% 
+  group_by(SEX) %>% 
+  summarize(count=n())
+kable(count_sex, caption="Counts For The Variable SEX")
+
+count_wrk <- gss22_r %>% 
+  group_by(WRKSTAT) %>% 
+  summarize(count=n())
+kable(count_wrk, caption="Counts For The Variable WRKSTAT")
+```
+
+
+
+## Multiple Imputation For Missing Values
+
+  For the missing values in my data set, I decided to perform multiple imputation using the MICE function in R. Before performing the imputation, I first converted all the variables into factors, and then built some visuals to assess how many missing values there were and whether there was any pattern.  
+
+```{r prep for MICE, echo=FALSE}
+gss22_imp <- gss22_r
+
+#categorical variables must be a factor for MICE package
+gss22_imp$WRKSTAT <- as.factor(gss22_imp$WRKSTAT)
+gss22_imp$HRS1 <- as.factor(gss22_imp$HRS1)
+gss22_imp$MARITAL <- as.factor(gss22_imp$MARITAL)
+gss22_imp$AGE <- as.factor(gss22_imp$AGE)
+gss22_imp$DEGREE <- as.factor(gss22_imp$DEGREE)
+gss22_imp$SEX <- as.factor(gss22_imp$SEX)
+gss22_imp$RACE <- as.factor(gss22_imp$RACE)
+gss22_imp$BORN <- as.factor(gss22_imp$BORN)
+gss22_imp$INCOME <- as.factor(gss22_imp$INCOME)  
+gss22_imp$REGION <- as.factor(gss22_imp$REGION)
+gss22_imp$POLVIEWS <- as.factor(gss22_imp$POLVIEWS)
+gss22_imp$FAMSUFFR <- as.factor(gss22_imp$FAMSUFFR)
+gss22_imp$HUBBYWK1 <- as.factor(gss22_imp$HUBBYWK1)
+gss22_imp$MARTYPE <- as.factor(gss22_imp$MARTYPE)
+```
+
+```{r libraries for MICE, message=FALSE, echo=FALSE}
+library(mice)
+library(VIM)
+library(ggmice)
+```
+
+The Missing Variables Plot below shows the number of missing values under each  variable: 
+```{r more data visualization before MICE, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(naniar)
+gg_miss_var(gss22_imp)
+```
+                                                                                                                                               As apparent from the plot, the variable with the highest number of missing values is MARTYPE, with over 600 missing values in comparison to 165 complete cases. Despite the large missing to complete cases ratio, I decided to proceed with imputation on this variable. 
+
+Next, I created a pattern plot which visualizes the number of missing entries and their pattern frequency throughout the data. The plot displays 25 patterns that were found within the data set. 
+Essentially, the plot can be read both horizontally and vertically.
+First, each row is analyzed to determine which variables have missing values (pink squares). The numbers on the right of the plot directly correlate with the number of pink squares along that row. The values on the left represent the number of observations that display that particular missing pattern frequency of that row. 
+
+For example, in the plot, the first row is completely blue; there are no missing values. The 93 on the left represents that 93 observations have 0 missing values. 
+The second row is read as follows: 317 observations have missing values under the variable MARTYPE. 
+The fourth row: 178 observations have missing values under both HRS1 and MARTYPE. 
+The last row is read as follows: 2 observations have missing values under POLVIEWS and MARTYPE. 
+The numbers along the bottom of the plot represent how many missing values each variable has. 
+
+```{r, echo=FALSE, message=FALSE, fig.width = 8, fig.asp = .80}
+plot_pattern(
+  gss22_imp,
+  square = TRUE,
+  rotate = TRUE,
+  npat=25
+)
+```
+
+
+ 
+  Then I performed multiple imputation on the data; I used the Predictive Mean Matching Method for the imputations. I created 5 data sets with 25 iterations which were then pooled into one data set. 
+
+```{r running MICE, echo=FALSE, include=FALSE, message=FALSE}
+options(scipen=999)
+gss22_m <- mice(gss22_imp, m=5, maxit=25, method="pmm", seed=500)
+summary(gss22_m)
+
+completedData <- complete(gss22_m,1)
+```
+
+
+ After obtaining the imputed model, I created split plots for the variables that had missing values. The split plots help determine how well the imputed data fits with the complete cases. 
+
+```{r MICE data visualization of variables with most missing values, echo=FALSE, fig.width = 8, fig.asp = .40}
+
+ggmice(gss22_m, aes(x=.imp, y= MARTYPE)) + geom_jitter(width=0.25) + 
+  labs(x = "Imputation number")
+
+ggmice(gss22_m, aes(x=.imp, y=HRS1)) + geom_jitter(width=0.25) + 
+  labs(x = "Imputation number")
+
+ggmice(gss22_m, aes(x=.imp, y= INCOME)) + geom_jitter(width=0.25) + 
+  labs(x = "Imputation number")
+
+ggmice(gss22_m, aes(x=.imp, y= HUBBYWK1)) + geom_jitter(width=0.25) + 
+  labs(x = "Imputation number")
+
+ggmice(gss22_m, aes(x=.imp, y= FAMSUFFR)) + geom_jitter(width=0.25) + 
+  labs(x = "Imputation number")
+
+ggmice(gss22_m, aes(x=.imp, y= POLVIEWS)) + geom_jitter(width=0.25) +
+  labs(x = "Imputation number")
+
+
+
+
+
+```
+
+# Statistical Analysis 
+
+## Question 1 
+
+  My hypothesis was as follows: There is a relationship between People's views on traditional gender roles and their demographics. The variables that I hypothesize as having the strongest relationship with the response are: POLVIEWS, BORN, RACE, AGE, INCOME, WRKSTAT and REGION. 
+
+To test my hypothesis, I built a logistic regression model with the imputed data. My first model tests the significance between the response, HUBBYWK1 and the explanatory variables. 
+```{r building logistic regression models for question 1, echo=FALSE}
+model1 <-with(gss22_m, glm(HUBBYWK1~WRKSTAT+HRS1+MARITAL+AGE+DEGREE+SEX+RACE+BORN
+                           +INCOME+REGION+POLVIEWS+MARTYPE, family=binomial))
+model1_table <- summary(pool(model1)) 
+kable(model1_table, caption="Estimates from Log Reg Model of Response HUBBYWK1", digits=3)
+
+```
+When using 0.05 as the significance level, the following variables are shown to have a significant relationship with the response, HUBBYWK1: 
+
+ + DEGREE (Graduate)             -> p.value (0.012)
+ + SEX (Male)                    -> p.value (0.016)
+ + RACE (White)                  -> p.value (0.030)
+ + BORN (Not born in US)         -> p.value(0.008)
+ + REGION (South)                -> p.value(0.039)
+ + POLVIEWS (Liberal)            -> p.value(< 0.001)
+ + POLVIEWS (Extremely Liberal)  -> p.value(< 0.001)
+ + POLVIEWS (Slightly Liberal)   -> p.value(< 0.001)
+ + POLVIEWS (Moderate)           -> p.value(< 0.001)
+
+
+After computing the Hosmer-Lemeshow Goodness of Fit test on the first model, the test results show that the logistic regression model is a good fit for the data, since the p.value is larger than 0.05 and it is pretty close to 1. 
+```{r, HL GOF, message=FALSE, echo=FALSE }
+library(mitools)
+X1 <- rep(NA, length(model1$analyses))
+
+# Compute chi-squared statistic on each imputation
+# (and store the degrees of freedom, as well)
+for(i in 1:length(X1)) {
+  HL1 <- ResourceSelection::hoslem.test(model1$analyses[[i]]$y,
+                                       model1$analyses[[i]]$fitted.values)
+  X1[i] <- HL1$statistic # Chi-squared value
+  DF    <- HL1$parameter # Degrees of freedom
+  rm(HL1)
+}
+
+comb <- miceadds::micombine.chisquare(X1, DF )
+
+
+```
+
+
+Below are stacked bar plots which represent the significant explanatory variables: 
+```{r, echo=FALSE, fig.width = 6, fig.asp = .60}
+
+                             
+ggplot(completedData, aes(x=POLVIEWS, fill=HUBBYWK1)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Men work and Women Stay Home") + xlab("Political Affiliation") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Pastel1", labels = c("AGREE", "DISAGREE"))
+
+
+ggplot(completedData, aes(x=DEGREE, fill=HUBBYWK1)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Men work and Women Stay Home") + xlab("Degree of Education") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Pastel2", labels = c("AGREE", "DISAGREE"))
+
+ggplot(completedData, aes(x=BORN, fill=HUBBYWK1)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Men work and Women Stay Home") + xlab("Whether Respondent was Born in US") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Reds", labels = c("AGREE", "DISAGREE"))
+
+ggplot(completedData, aes(x=REGION, fill=POLVIEWS)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Men work and Women Stay Home") + xlab("Regions of the US") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Oranges")
+
+ggplot(completedData, aes(x=REGION, fill=RACE)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Men work and Women Stay Home") + xlab("Regions of the US") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Oranges")
+
+ggplot(completedData, aes(x=REGION, fill=SEX)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Men work and Women Stay Home") + xlab("Regions of the US") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Oranges")
+
+```
+
+
+Note the larger margin of discrepancy among the people who identify themselves under the umbrella of the Liberal political party and their opinions on the response variable. There is a significantly larger proportion of Liberals who disagree with the survey question than those who agree. 
+Also note a similar pattern under the GRADUATE level of the variable DEGREE. People who have a graduates degree more often disagree with traditional gender roles than those who agree. 
+Similarly, for the variable BORN, even though a smaller portion of the population consists of people not born in the US, a large amount of them disagree with gender roles compared to those who do. 
+Finally, in order to assess what demographics may contribute to the significance of the variable REGION, the explanatory variable has been compared with certain demographics like RACE, POLVIEWS, and SEX. It seems that other than the fact that there are a larger proportion of white people in the South compared to any other race, none of the other variables, POLVIEWS or SEX, seem to contribute to the reason why that particular level has the most significance out of all the US regions. This alludes to another, more important demographic or factor here which could potentially be lending a part into why the South has a significance with the response.  
+
+
+## Question 2 
+
+Finally, I created a second logestic regression model for the second response, FAMSUFFR and it yielded the following results: 
+
+```{r model2, echo=FALSE}
+model2 <-with(gss22_m, glm(FAMSUFFR~WRKSTAT+HRS1+MARITAL+AGE+DEGREE+SEX+RACE+BORN
+                           +INCOME+REGION+POLVIEWS+MARTYPE, family=binomial))
+model2_table <- summary(pool(model2)) 
+kable(model2_table, caption="Estimates from Log Reg Model of Response FAMSUFFR", digits=3)
+```
+The following variables are shown to have the most significance with FAMSUFFR:
+
+
+ + AGE (60 to 69 Years)          -> p.value (0.028)
+ + DEGREE (Graduate)             -> p.value (0.011)
+ + SEX (Male)                    -> p.value (0.018)
+ + BORN (Not born in US)         -> p.value (0.001)
+ + POLVIEWS (Liberal)            -> p.value (0.007)
+ + POLVIEWS (Extremely Liberal)  -> p.value (0.002)
+ + POLVIEWS (Slightly Liberal)   -> p.value (0.038)
+
+After computing the Hosmer Lemeshow Goodness of fit test, I can conclude that the insignificant p-value shows that the logistic regression model is a good fit for our data. 
+
+```{r running H-L on model 2, echo=FALSE}
+
+X2 <- rep(NA, length(model2$analyses))
+for(i in 1:length(X2)) {
+  HL2 <- ResourceSelection::hoslem.test(model2$analyses[[i]]$y,
+                                       model2$analyses[[i]]$fitted.values)
+  X2[i] <- HL2$statistic # Chi-squared value
+  DF    <- HL2$parameter # Degrees of freedom
+  rm(HL2)
+}
+
+comb2 <- miceadds::micombine.chisquare(X2, DF )
+```
+
+
+Below is a bar graph of the variables AGE and DEGREE with the response, FAMSUFFR: 
+```{r plots, echo=FALSE, fig.width = 6, fig.asp = .60}
+
+ggplot(completedData, aes(x=AGE, fill=FAMSUFFR)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Woman Working Affects Fam Life") + xlab("Respondants Age") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Greens", labels = c("AGREE", "DISAGREE"))
+
+ggplot(completedData, aes(x=DEGREE, fill=FAMSUFFR)) + geom_bar(position='stack')  + ggtitle("Agree or Disagree, Woman Working Affects Fam Life" ) + xlab("Degree of Education") + ylab("Number of Respondents") + coord_flip() + scale_fill_brewer(palette= "Pastel2", labels = c("AGREE", "DISAGREE"))
+```
+
+The variable, DEGREE, here shows a similar result as was shown for the bar plot of the variable DEGREE and the response FAMSUFFR. We can deduce here then that people who have a graduates degree tend to oppose traditional gender roles at a larger discrepancy in comparison to people who don't have a graduates degree. 
+Also, since the variable POLVIEWS, particularly the Liberal levels, were highly significant, we can determine that people who fall under the Liberal political affilation are strongly opposed to traditional gender views in comparison to people who identify as conservataives, as there seems to be a mix of people who agree and disagree.  
+
+
+# Conclusion 
+
+  In conclusion, my hypothesis was partially correct. While I was unable to use the variable RELIG in my analysis, the assumption that some of the other variables that I predicted would have a significant relationship with the response variables HUBBYWK1, FAMSUFFR turned out be true. This is namely the case for the variables POLVIEWS, AGE, BORN, RACE, and REGION. 
+In other words, we can conclude the following: 
+”Certain demographics, like a person's political views, their race, sex, age, the highest degree they earned, and whether they were born in the US, are all factors that contribute to their opinion on traditional gender roles in the US.” 
