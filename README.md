@@ -24,15 +24,16 @@ income, age, political views, and region are examined to explore how perspective
 https://a-syed-00.github.io/Capstone_Projects/
 
 ** 📂 Files:**
-- (Project 1/Capstone Project Report.Rmd): Full reproducible analysis and code.  
-- (Project 1/STA 490 Capstone-Project-Report.docx): Knitted Word report with visualizations.
+- (https://github.com/A-Syed-00/Capstone_Projects/blob/main/project1/Project1.Rmd): Full reproducible analysis and code.  
+- (https://github.com/A-Syed-00/Capstone_Projects/blob/main/project1/Project1-Report.docx): Knitted Word report with visualizations.
 
 ---
 
 
 ## 🧰 How to View the Projects
 You can explore each project folder directly in this repository.  
-- The `.Rmd` files show the full R code and workflow.  
-- The `.docx` files can be downloaded to view the final report.  
+- The `.Rmd` file show the full R code and workflow.  
+- The `.docx` file can be downloaded to view the final report.
+- The `.html` file opens up to a webpage displaying the final report. 
 
 ---
