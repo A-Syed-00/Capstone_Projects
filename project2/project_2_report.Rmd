@@ -7,18 +7,16 @@ output:
     df_print: paged
 ---
 
-# About The Dataset
+## Introduction
 
-  Is it true that there are more drunk driving incidents around the holidays and the weekends? Doing a quick search will yield a startlingly large amount of alarming statistics about DUI related crime.  
-According to Driver's ed, "25% of adults admit that they drink more during the holiday season," and according to Injury Facts, "Saturday is the most dangerous day of the week to drive." While these statistics are a culmination of data collected throughout the years and across the United States, an inquiry may arise about the DUI statistics within a particular city. This is where my research question comes into play, specifically about the number of DUI incidents in the city of Boston. I wanted to investigate the correlation between drunk driving incidents around the holidays, weekends, and months with warm weather within the city of Boston. I would then use the data to determine how well my model would be for predicting DUI's in the next year. 
-My data set comes from the Boston Police Department Database: https://data.boston.gov/dataset/crime-incident-reports-august-2015-to-date-source-new-system
-For this project, I decided to focus on the years 2019, 2021, 2022, and 2023.
+This project analyzes DUI (drunk driving incidents) in Boston to identify patterns related to holidays, weekends, and seasonal trends. National statistics suggest higher risk during these times. For example, Driver's Ed reports that 25% of adults consume more alcohol during the holiday season, and Injury Facts identifies Saturday as the most dangerous day to drive.
+
+The data set is sourced from from the Boston Police Department Database: https://data.boston.gov/dataset/crime-incident-reports-august-2015-to-date-source-new-system
+The analysis focuses on DUI incidents from the years 2019, 2021, 2022, and 2023. 
 
 
+## Data Cleaning and Preperation 
 
-# Data Management 
-
-Before doing any analysis, I needed to complete a few steps of data management. 
 ```{r, message=FALSE, include=FALSE}
 setwd("~/Downloads/STA 419")
 
@@ -29,17 +27,18 @@ crime23 <- read.csv("CrimeData23.csv")
 library(tidyverse)
 library(caret)
 ```
-After loading the data onto R studio, I had 4 seperate data sets with 17 variables each. The 2019 data set had a total of 87,184 observations, the 2021 data set had a total pf 71,721 observations, the 2022 data set had a total of 73,852 observations, and, lastly, the 2023 data set had a total of 74,040 observations. Note that the 2023 is incomplete as the full year has not yet elapsed, the last crime incident that was entered occured on December 12, 2023. 
-Next, I wished to combine all 4 data sets into one. I accomplished this by utilizing cbind: 
+
+After loading the data into R, there were four separate data sets with 17 variables each. The 2019 dataset had 87,184 incidents, the 2021 data had 71,721 incidents, the 2022 data had 73,852, and lastly the 2023 data had 74,040 incidents. The year 2023 data set is incomplete, with the most recent incident recorded on December 12, 2023. 
+
+
+The data sets were combined into a single data set totaling 306,797 observations. To focus the analysis on DUI related incidents, all other crime types were filtered out. 
 
 ```{r, include=FALSE}
 crimedata <- rbind(crime19, crime21, crime22,crime23)
 ```
-The combined data set, crimedata, consists of 306,797 observations in total. 
-Since my focus was exclusively on DUI incidents, I needed to filter out all other crimes from the data set. 
-I created a new data set, *crimeDUI* which consists of reported DUI crimes only and which has the following variables: 
-
-
+ 
+The resulting data set consists 373 reported DUI incidents and the following variables: 
+ 
 | Variable             | Description                                  |
 |----------------------|----------------------------------------------|
 | OFFENSE_CODE         | Code assigned to each type of crime          |
@@ -55,9 +54,8 @@ crimeDUI <- crimedata %>%
   filter(OFFENSE_CODE==2101)
 crimeDUI
 ```
-My new dataset has a total of 373 observations or a total of 373 reported DUI incidents within the four years. 
+ 
 
-Next, I created a column, called **dates** within the dataset that substrings the character values under the variable **MONTH** and translates them into the format I wish to work with. In this case, I wanted the yy-mm-dd format: 
 ```{r, include=FALSE}
 dat_new<-substr(crimeDUI$OCCURRED_ON_DATE, 1,10)
 dat_new
@@ -70,8 +68,8 @@ crimeDUI %>%
 crimeDUI
 ```
 
-Then, I needed columns that distinguish holidays, weekends and warmer months from 'regular days', 'work days', and 'colder months'. 
-I considered the following holidays: 
+To analyze trends related to holidays, weekends, and warmer months, additional columns were created to classify each observation accordingly. 
+The following holidays were considered: 
 
 1. New Year’s Day  
 2. Super Bowl Sunday  
@@ -87,8 +85,7 @@ I considered the following holidays:
 12. Christmas Day  
 13. New Year’s Eve
  
-For warm months, I considered May until (and including) September
-To do that, I used the mutate function and the case_when function: 
+Observations from May through September were classified as occurring in warmer months. These classifications were implemented in R using the `mutate()` function along with the `case_when()` function. 
 ```{r, include=FALSE}
 crimeDUI <- crimeDUI %>% 
   mutate(holiday= case_when(dates == "2022-01-01" ~ "1",
@@ -168,16 +165,17 @@ crimeDUI$warm_months[is.na(crimeDUI$warm_months)] <- 0
 
 
 
-# Statistical Analysis and Model Building 
-For my analysis, since the data set has only one value for the response, a linear model wouldn't have been the ideal method to analyze data. Instead, I performed some summary statistics. i first wanted to see how many incidents there were each year: 
+## Statistical Analysis and Model Building 
+
+Given that the data set contains a single response variable, a linear model was not suitable for analysis. Instead, summray statistics were computed to explore trends in DUI incidents.
 ```{r, include=FALSE}
 crimeDUI %>% 
   group_by(YEAR) %>% 
   summarize(count= n())
 ```
 
-Then I wanted to see how many incidents occurred during the holidays each year and how many occurred on regular days. For this table, 0 = Non-holidays of that particular year and 1 = All holidays  
-```{r, message=FALSE,echo=FALSE}
+First, the number of incidents per year was summarized. Next, incidents were categorized by holidays, where 0= non-holiday and 1 = holiday. Analysis revealed that only 2.6% of DUI incidents occurred during the holidays, suggesting that the majority of incidents happen on regular days. 
+```{r, message=FALSE,echo=FALSE, include = FALSE}
 library (dplyr)
 library(knitr)
 holiday_summary <- crimeDUI %>% 
@@ -186,14 +184,17 @@ holiday_summary <- crimeDUI %>%
 kable(holiday_summary, caption = "Incidents by Year and Holiday Status")
 
 ```
-It seems like more accidents occurred outside of the holidays than during the holidays. Only about 2.6% of DUI incidents occurred during the holidays
+Further analysis grouped incidents by: 
 
-Next, I grouped the data by:
+ 1. Year and weekends: 0=weekdays, 1= weekends
+    + Approximately 40% of DUI incidents occurred on weekends, while 60% occurred on weekdays. 
+    
+2. Year and warmer months: 0= colder months (October-April), 1= warmer months (May-September)
+    + About 40% of incidents occurred during the warmer months, with the remaining 60% in colder months. 
 
-1. Year and weekends:  0 = Weekdays of the year and 1 = Weekends of the year 
-2. Year and Warmer months: 0 = Months of the year that are not between May and September and 1 = Months of the year that are between May and September
 
-```{r, message=FALSE, echo=FALSE}
+
+```{r, message=FALSE, echo=FALSE, include=FALSE}
 weekend_summary <- crimeDUI %>% 
   group_by(YEAR, weekend) %>% 
   summarize(count=n(), .groups="drop")
@@ -201,7 +202,7 @@ kable(weekend_summary, caption="Incidents by Year and Weekends")
 
 ```
 
-```{r, message=FALSE, echo=FALSE}
+```{r, message=FALSE, echo=FALSE, include=FALSE}
 warm_months_summary <- crimeDUI %>% 
   group_by(YEAR, warm_months) %>% 
   summarize(count=n(), .groups="drop")
@@ -210,19 +211,73 @@ warm_months_summary <- crimeDUI %>%
 For weekends, more accidents occurred during the weekdays- about 40% of DUI incidents occurred during the weekend and 60% during the weekdays.  
 For warmer months, about 40% of DUI incidents occurred between May and September while 60% occurred during the colder months. 
 
-Below are bar plots of each of the variables of interest by year: 
+Bar plots were generated to visualize trends in each variable of interest by year, showing patterns in DUI incidents across holidays, weekends, and warmer months. 
 
 ```{r, message=FALSE, echo=FALSE}
-ggplot(crimeDUI, aes(x=YEAR, fill=holiday)) + geom_bar() + ggtitle("DUI Incidents in the City of Boston") + xlab("Years") + ylab("Number of Incidents") + scale_fill_brewer(palette="Pastel1",  labels = c("Non-Holiday", "Holiday"))
 
-ggplot(crimeDUI, aes(x=YEAR, fill=weekend)) + geom_bar() + ggtitle("DUI Incidents in the City of Boston") + xlab("Years") + ylab("Number of Incidents") + scale_fill_brewer(palette="Pastel2",  labels = c("Weekday", "Weekend"))
+get_percentage <- function(data, group_var, fill_var) {
+  data %>%
+    group_by({{group_var}}, {{fill_var}}) %>%
+    summarise(count = n(), .groups = "drop") %>%
+    group_by({{group_var}}) %>%
+    mutate(percentage = count / sum(count) * 100)
+}
 
-ggplot(crimeDUI, aes(x=YEAR, fill=warm_months)) + geom_bar() +  ggtitle("DUI Incidents in the City of Boston") + xlab("Years") + ylab("Number of Incidents") + scale_fill_brewer(palette="Purples", labels = c("Colder Months", "Warmer Months"))
+holiday_summary <- get_percentage(crimeDUI, YEAR, holiday)
+
+ggplot(holiday_summary, aes(x = factor(YEAR), y = count, fill = factor(holiday))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(percentage,1), "%")), 
+            position = position_stack(vjust = 0.5), size = 4) +
+  scale_fill_brewer(palette = "Pastel1", labels = c("Non-Holiday", "Holiday")) +
+  labs(
+    title = "DUI Incidents in Boston by Holiday Status",
+    x = "Year",
+    y = "Number of Incidents",
+    fill = "Day Type"
+  ) +
+  theme_minimal(base_size = 14)
+
+# DUI incidents by weekend
+weekend_summary <- get_percentage(crimeDUI, YEAR, weekend)
+
+ggplot(weekend_summary, aes(x = factor(YEAR), y = count, fill = factor(weekend))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(percentage,1), "%")), 
+            position = position_stack(vjust = 0.5), size = 4) +
+  scale_fill_brewer(palette = "Pastel2", labels = c("Weekday", "Weekend")) +
+  labs(
+    title = "DUI Incidents in Boston by Weekday vs. Weekend",
+    x = "Year",
+    y = "Number of Incidents",
+    fill = "Day Type"
+  ) +
+  theme_minimal(base_size = 14)
+
+# DUI incidents by warm months
+warm_summary <- get_percentage(crimeDUI, YEAR, warm_months)
+
+ggplot(warm_summary, aes(x = factor(YEAR), y = count, fill = factor(warm_months))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(percentage,1), "%")), 
+            position = position_stack(vjust = 0.5), size = 4) +
+  scale_fill_brewer(palette = "Purples", labels = c("Colder Months", "Warmer Months")) +
+  labs(
+    title = "DUI Incidents in Boston by Month Type",
+    x = "Year",
+    y = "Number of Incidents",
+    fill = "Month Type"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+
 
 ```
 
 
-# Conclusions 
+## Conclusions 
 
-Although my initial assumption of there being a larger proportion of DUI accidents in Boston during the holidays, weekends, and the summer months was incorrect, I can assume that because I only had data for four years, I cannot make that larger assumption that a large number of DUI accidents in Boston occur around these times of the year. Based on my analysis, I can see why there are a larger number of accidents in the winter months and this is due to the holiday season, even though not many accidents occurred on holidays themselves. Perhaps different conclusions can be reached if I were to analyze data from 10 or 15 years and that I could have gotten a different picture if I also factored in what times of the day do DUI accidents most frequently occur.
+While the initial hypothesis suggested a higher proportion of DUI incidents in Boston during holidays, weekends, and warmer months, the analysis of four years of data did not support this assumption. The results indicate that the majority of DUI incidents occurred outside of the holidays with more incidents on weekdays than weekends, and more incidents during the colder months than warmer months. 
 
+These findings highlight the importance of considering data scope and limitations. Since there are only four years of data, broader trends cannot be conclusively determined. Extending the analysis to include data from the past 10-15 years and incorporating additional factors like time of day could provide a more comprehensive understanding of DUI patterns in Boston. 
