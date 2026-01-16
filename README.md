@@ -21,11 +21,13 @@ income, age, political views, and region are examined to explore how perspective
 ** 🛠️ Tools Used:** R, MICE, ggplot2, dplyr, tidyverse  
 
 ** 📊 View Full Interactive Report Here** 
-https://a-syed-00.github.io/Capstone_Projects/
+UPDATE: Final revised report using the 2022 General Social Survey, including
+multiple imputation and logistic regression analysis.
+
+🔗 View report: [https://a-syed-00.github.io/Capstone_Projects/]
 
 ** 📂 Files:**
-- (https://github.com/A-Syed-00/Capstone_Projects/blob/main/project1/Project1.Rmd): Full reproducible analysis and code.  
-- (https://github.com/A-Syed-00/Capstone_Projects/blob/main/project1/Project1-Report.docx): Knitted Word report with visualizations.
+- [http://github.com/A-Syed-00/Capstone_Projects/blob/main/project1/Project_One_Report.Rmd]: Full reproducible analysis and code.  
 
 ---
 
