@@ -39,16 +39,15 @@ Crime Incident Reports, the analysis examines trends across the years 2019, 2021
 ** 🛠️ Tools Used:** R, tidyverse, ggplot2, dplyr, caret  
 
 ** 📊 View Full Interactive Report Here** 
-https://a-syed-00.github.io/Capstone_Projects/project2/
+🔗 [https://a-syed-00.github.io/Capstone_Projects/project_2/]
 
 ** 📂 Files:**
-- (https://github.com/A-Syed-00/Capstone_Projects/blob/main/project2/STA%20419%20Project%20.Rmd): Full reproducible analysis and code. 
+- [https://github.com/A-Syed-00/Capstone_Projects/blob/main/project2/project_2_report.Rmd]: Full reproducible analysis and code. 
 
 ---
 ## 🧰 How to View the Projects
 You can explore each project folder directly in this repository.  
 - The `.Rmd` files show the full R code and workflow.  
 - The `.docx` file can be downloaded to view the final report.
-- The `.html` files opens up to a webpage displaying the final report. 
 
 ---
