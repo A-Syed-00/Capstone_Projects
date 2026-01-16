@@ -39,7 +39,7 @@ Crime Incident Reports, the analysis examines trends across the years 2019, 2021
 ** 🛠️ Tools Used:** R, tidyverse, ggplot2, dplyr, caret  
 
 ** 📊 View Full Interactive Report Here** 
-🔗 [https://a-syed-00.github.io/Capstone_Projects/project_2/]
+🔗 [https://a-syed-00.github.io/Capstone_Projects/project2/]
 
 ** 📂 Files:**
 - [https://github.com/A-Syed-00/Capstone_Projects/blob/main/project2/project_2_report.Rmd]: Full reproducible analysis and code. 
